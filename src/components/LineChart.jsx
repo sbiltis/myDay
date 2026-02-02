@@ -1,15 +1,26 @@
 import { ResponsiveLine } from "@nivo/line";
 import { useTheme } from "@mui/material";
 import { tokens } from "../theme";
-import { mockLineData as data } from "../data/mockData";
 
-const LineChart = ({ isCustomLineColors = false, isDashboard = false }) => {
+const LineChart = ({ data, isDashboard = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  // Transform data into nivo format
+  const chartData = [
+    {
+      id: "Tasks Completed",
+      color: colors.greenAccent[500],
+      data: data.map(item => ({
+        x: item.date,
+        y: item.tasks
+      }))
+    }
+  ];
+
   return (
     <ResponsiveLine
-      data={data}
+      data={chartData}
       theme={{
         axis: {
           domain: {
@@ -43,42 +54,42 @@ const LineChart = ({ isCustomLineColors = false, isDashboard = false }) => {
           },
         },
       }}
-      colors={isDashboard ? { datum: "color" } : { scheme: "nivo" }} // added
+      colors={colors.greenAccent[500]}
       margin={{ top: 50, right: 110, bottom: 50, left: 60 }}
       xScale={{ type: "point" }}
       yScale={{
         type: "linear",
-        min: "auto",
+        min: 0,
         max: "auto",
-        stacked: true,
+        stacked: false,
         reverse: false,
       }}
-      yFormat=" >-.2f"
+      yFormat=" >-.0f"
       curve="catmullRom"
       axisTop={null}
       axisRight={null}
       axisBottom={{
         orient: "bottom",
-        tickSize: 0,
+        tickSize: 5,
         tickPadding: 5,
-        tickRotation: 0,
-        legend: isDashboard ? undefined : "transportation", // added
-        legendOffset: 36,
+        tickRotation: -45,
+        legend: isDashboard ? undefined : "Date",
+        legendOffset: 45,
         legendPosition: "middle",
       }}
       axisLeft={{
         orient: "left",
-        tickValues: 5, // added
-        tickSize: 3,
+        tickValues: 5,
+        tickSize: 5,
         tickPadding: 5,
         tickRotation: 0,
-        legend: isDashboard ? undefined : "count", // added
-        legendOffset: -40,
+        legend: isDashboard ? undefined : "Tasks Completed",
+        legendOffset: -50,
         legendPosition: "middle",
       }}
       enableGridX={false}
-      enableGridY={false}
-      pointSize={8}
+      enableGridY={true}
+      pointSize={10}
       pointColor={{ theme: "background" }}
       pointBorderWidth={2}
       pointBorderColor={{ from: "serieColor" }}

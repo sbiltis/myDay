@@ -1,0 +1,66 @@
+export const mockProgressReports = [
+  {
+    id: 1,
+    submittedBy: "Shawn Biltis",
+    department: "Software",
+    weekEnding: "2026-01-31",
+    hoursWorked: 12,
+    accomplishments: "Completed autonomous navigation algorithm initial implementation. Set up simulation environment for testing pathfinding logic.",
+    blockers: "Need access to real drone hardware for testing. Waiting on GPS module delivery.",
+    nextWeekGoals: "Integrate GPS module once delivered. Begin field testing with prototype.",
+    submittedDate: "2026-01-31",
+  },
+  {
+    id: 2,
+    submittedBy: "Sarah Chen",
+    department: "Business Development",
+    weekEnding: "2026-01-31",
+    hoursWorked: 10,
+    accomplishments: "Completed market analysis for Seattle area. Identified 3 key competitor services. Created initial customer persona profiles.",
+    blockers: "None",
+    nextWeekGoals: "Schedule interviews with potential customers. Draft go-to-market strategy document.",
+    submittedDate: "2026-01-31",
+  },
+  {
+    id: 3,
+    submittedBy: "Michael Torres",
+    department: "Hardware",
+    weekEnding: "2026-01-31",
+    hoursWorked: 15,
+    accomplishments: "Assembled first prototype drone frame. Installed motors and ESCs. Completed initial power system testing.",
+    blockers: "Flight controller firmware needs calibration - requires software team input.",
+    nextWeekGoals: "Calibrate flight controller. Begin hover stability tests. Order backup components.",
+    submittedDate: "2026-02-01",
+  },
+  {
+    id: 4,
+    submittedBy: "Shawn Biltis",
+    department: "Software",
+    weekEnding: "2026-01-24",
+    hoursWorked: 8,
+    accomplishments: "Researched pathfinding algorithms (A*, Dijkstra). Set up React dashboard for monitoring system.",
+    blockers: "Need to decide on final tech stack for embedded systems.",
+    nextWeekGoals: "Begin implementing chosen pathfinding algorithm.",
+    submittedDate: "2026-01-24",
+  },
+  {
+    id: 5,
+    submittedBy: "Emily Rodriguez",
+    department: "Regulatory",
+    weekEnding: "2026-01-31",
+    hoursWorked: 6,
+    accomplishments: "Compiled FAA Part 107 requirements checklist. Started documentation for commercial exemption application.",
+    blockers: "Unclear on insurance requirements for commercial operations.",
+    nextWeekGoals: "Consult with aviation insurance providers. Draft safety protocols document.",
+    submittedDate: "2026-01-30",
+  }
+];
+
+export const teamMembers = [
+  "Shawn Biltis",
+  "Sarah Chen",
+  "Michael Torres",
+  "Emily Rodriguez",
+  "Alex Johnson",
+  "Jordan Smith"
+];

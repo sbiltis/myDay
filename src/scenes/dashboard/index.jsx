@@ -1,139 +1,326 @@
-import { Box, Button, IconButton, Typography, useTheme } from "@mui/material";
+import { Box, Typography, useTheme } from "@mui/material";
 import { tokens } from "../../theme";
-import { mockTransactions } from "../../data/mockData";
-import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
-import EmailIcon from "@mui/icons-material/Email";
-import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
-import PersonAddIcon from "@mui/icons-material/PersonAdd";
-import TrafficIcon from "@mui/icons-material/Traffic";
 import Header from "../../components/Header";
+import { mockTasks } from "../../data/mockTasks";
+import { mockProgressReports } from "../../data/progressReportData";
 import LineChart from "../../components/LineChart";
-import GeographyChart from "../../components/GeographyChart";
-import BarChart from "../../components/BarChart";
-import StatBox from "../../components/StatBox";
-import ProgressCircle from "../../components/ProgressCircle";
+import { mockProductivityData } from "../../data/mockTasks";
 
 const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  // Calculate task metrics
+  const totalTasks = mockTasks.length;
+  const completedTasks = mockTasks.filter(
+    (t) => t.status === "Completed",
+  ).length;
+  const inProgressTasks = mockTasks.filter(
+    (t) => t.status === "In Progress",
+  ).length;
+  const blockedTasks = mockTasks.filter((t) => t.status === "Blocked").length;
+  const completionRate = Math.round((completedTasks / totalTasks) * 100);
+
+  // Calculate progress report metrics
+  const getCurrentWeekReports = () => {
+    const today = new Date();
+    const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return mockProgressReports.filter((report) => {
+      const reportDate = new Date(report.submittedDate);
+      return reportDate >= oneWeekAgo;
+    });
+  };
+
+  const thisWeekReports = getCurrentWeekReports();
+  const totalHoursThisWeek = thisWeekReports.reduce(
+    (sum, report) => sum + report.hoursWorked,
+    0,
+  );
+
+  // Get overdue and upcoming tasks
+  const today = new Date().toISOString().split("T")[0];
+  const overdueTasks = mockTasks.filter(
+    (task) => task.status !== "Completed" && task.dueDate < today,
+  );
+
+  const nextWeek = new Date();
+  nextWeek.setDate(nextWeek.getDate() + 7);
+  const upcomingTasks = mockTasks.filter(
+    (task) =>
+      task.status !== "Completed" &&
+      task.dueDate >= today &&
+      task.dueDate <= nextWeek.toISOString().split("T")[0],
+  );
+
   return (
     <Box m="20px">
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Header title="DASHBOARD" subtitle="Welcome to your dashboard" />
-
-        <Box>
-          <Button
-            sx={{
-              backgroundColor: colors.blueAccent[700],
-              color: colors.grey[100],
-              fontSize: "14px",
-              fontWeight: "bold",
-              padding: "10px 20px",
-            }}
-          >
-            <DownloadOutlinedIcon sx={{ mr: "10px" }} />
-            Download Reports
-          </Button>
-        </Box>
+        <Header
+          title="SKYDROP DASHBOARD"
+          subtitle="Project Overview & Team Productivity"
+        />
       </Box>
 
-      {/* GRID & CHARTS */}
+      {/* STATS GRID */}
       <Box
         display="grid"
         gridTemplateColumns="repeat(12, 1fr)"
         gridAutoRows="140px"
         gap="20px"
+        mt="20px"
       >
-        {/* ROW 1 */}
+        {/* Stat Card 1: Completed Tasks */}
         <Box
           gridColumn="span 3"
           backgroundColor={colors.primary[400]}
           display="flex"
           alignItems="center"
           justifyContent="center"
+          p="20px"
+          borderRadius="4px"
         >
-          <StatBox
-            title="12,361"
-            subtitle="Emails Sent"
-            progress="0.75"
-            increase="+14%"
-            icon={
-              <EmailIcon
-                sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
-              />
-            }
-          />
-        </Box>
-        <Box
-          gridColumn="span 3"
-          backgroundColor={colors.primary[400]}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <StatBox
-            title="431,225"
-            subtitle="Sales Obtained"
-            progress="0.50"
-            increase="+21%"
-            icon={
-              <PointOfSaleIcon
-                sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
-              />
-            }
-          />
-        </Box>
-        <Box
-          gridColumn="span 3"
-          backgroundColor={colors.primary[400]}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <StatBox
-            title="32,441"
-            subtitle="New Clients"
-            progress="0.30"
-            increase="+5%"
-            icon={
-              <PersonAddIcon
-                sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
-              />
-            }
-          />
-        </Box>
-        <Box
-          gridColumn="span 3"
-          backgroundColor={colors.primary[400]}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <StatBox
-            title="1,325,134"
-            subtitle="Traffic Received"
-            progress="0.80"
-            increase="+43%"
-            icon={
-              <TrafficIcon
-                sx={{ color: colors.greenAccent[600], fontSize: "26px" }}
-              />
-            }
-          />
+          <Box width="100%">
+            <Typography
+              variant="h3"
+              fontWeight="bold"
+              color={colors.greenAccent[500]}
+            >
+              {completedTasks}
+            </Typography>
+            <Typography variant="h5" color={colors.grey[100]}>
+              Tasks Completed
+            </Typography>
+            <Typography variant="h6" color={colors.greenAccent[400]} mt="5px">
+              {completionRate}% completion rate
+            </Typography>
+          </Box>
         </Box>
 
-        {/* ROW 2 */}
+        {/* Stat Card 2: In Progress */}
         <Box
-          gridColumn="span 8"
+          gridColumn="span 3"
+          backgroundColor={colors.primary[400]}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          p="20px"
+          borderRadius="4px"
+        >
+          <Box width="100%">
+            <Typography
+              variant="h3"
+              fontWeight="bold"
+              color={colors.blueAccent[500]}
+            >
+              {inProgressTasks}
+            </Typography>
+            <Typography variant="h5" color={colors.grey[100]}>
+              In Progress
+            </Typography>
+            <Typography variant="h6" color={colors.grey[300]} mt="5px">
+              {totalTasks} total tasks
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Stat Card 3: Hours This Week */}
+        <Box
+          gridColumn="span 3"
+          backgroundColor={colors.primary[400]}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          p="20px"
+          borderRadius="4px"
+        >
+          <Box width="100%">
+            <Typography
+              variant="h3"
+              fontWeight="bold"
+              color={colors.greenAccent[500]}
+            >
+              {totalHoursThisWeek}
+            </Typography>
+            <Typography variant="h5" color={colors.grey[100]}>
+              Hours This Week
+            </Typography>
+            <Typography variant="h6" color={colors.grey[300]} mt="5px">
+              {thisWeekReports.length} reports submitted
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Stat Card 4: Blocked Tasks */}
+        <Box
+          gridColumn="span 3"
+          backgroundColor={colors.primary[400]}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          p="20px"
+          borderRadius="4px"
+        >
+          <Box width="100%">
+            <Typography
+              variant="h3"
+              fontWeight="bold"
+              color={
+                blockedTasks > 0
+                  ? colors.redAccent[500]
+                  : colors.greenAccent[500]
+              }
+            >
+              {blockedTasks}
+            </Typography>
+            <Typography variant="h5" color={colors.grey[100]}>
+              Blocked Tasks
+            </Typography>
+            <Typography variant="h6" color={colors.grey[300]} mt="5px">
+              {blockedTasks > 0 ? "Need attention" : "All clear!"}
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Upcoming Deadlines Section */}
+        <Box
+          gridColumn="span 6"
           gridRow="span 2"
           backgroundColor={colors.primary[400]}
+          overflow="auto"
+          borderRadius="4px"
         >
           <Box
-            mt="25px"
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            borderBottom={`4px solid ${colors.primary[500]}`}
+            p="15px"
+          >
+            <Typography color={colors.grey[100]} variant="h5" fontWeight="600">
+              Upcoming Deadlines (Next 7 Days)
+            </Typography>
+          </Box>
+          {upcomingTasks.length === 0 ? (
+            <Box p="15px">
+              <Typography color={colors.grey[100]}>
+                No upcoming deadlines in the next 7 days 🎉
+              </Typography>
+            </Box>
+          ) : (
+            upcomingTasks.map((task) => (
+              <Box
+                key={task.id}
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                borderBottom={`2px solid ${colors.primary[500]}`}
+                p="15px"
+              >
+                <Box flex="1">
+                  <Typography
+                    color={colors.greenAccent[400]}
+                    variant="h5"
+                    fontWeight="600"
+                  >
+                    {task.title}
+                  </Typography>
+                  <Typography color={colors.grey[100]} fontSize="14px">
+                    {task.assignedTo} • {task.department}
+                  </Typography>
+                </Box>
+                <Box
+                  backgroundColor={
+                    task.priority === "Critical"
+                      ? colors.redAccent[500]
+                      : task.priority === "High"
+                        ? colors.redAccent[700]
+                        : colors.blueAccent[700]
+                  }
+                  p="8px 12px"
+                  borderRadius="4px"
+                >
+                  <Typography fontSize="12px" fontWeight="bold">
+                    {task.dueDate}
+                  </Typography>
+                </Box>
+              </Box>
+            ))
+          )}
+        </Box>
+
+        {/* Recent Progress Reports Section */}
+        <Box
+          gridColumn="span 6"
+          gridRow="span 2"
+          backgroundColor={colors.primary[400]}
+          overflow="auto"
+          borderRadius="4px"
+        >
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            borderBottom={`4px solid ${colors.primary[500]}`}
+            p="15px"
+          >
+            <Typography color={colors.grey[100]} variant="h5" fontWeight="600">
+              Recent Progress Reports
+            </Typography>
+          </Box>
+          {thisWeekReports.length === 0 ? (
+            <Box p="15px">
+              <Typography color={colors.grey[100]}>
+                No progress reports submitted this week
+              </Typography>
+            </Box>
+          ) : (
+            thisWeekReports.slice(0, 5).map((report) => (
+              <Box
+                key={report.id}
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                borderBottom={`2px solid ${colors.primary[500]}`}
+                p="15px"
+              >
+                <Box flex="1">
+                  <Typography
+                    color={colors.greenAccent[400]}
+                    variant="h5"
+                    fontWeight="600"
+                  >
+                    {report.submittedBy}
+                  </Typography>
+                  <Typography color={colors.grey[100]} fontSize="14px">
+                    {report.accomplishments.substring(0, 80)}...
+                  </Typography>
+                </Box>
+                <Box textAlign="right" ml="10px">
+                  <Typography color={colors.grey[100]} fontWeight="bold">
+                    {report.hoursWorked}h
+                  </Typography>
+                  <Typography color={colors.grey[300]} fontSize="12px">
+                    {report.weekEnding}
+                  </Typography>
+                </Box>
+              </Box>
+            ))
+          )}
+        </Box>
+        {/* Productivity Chart */}
+        <Box
+          gridColumn="span 12"
+          gridRow="span 2"
+          backgroundColor={colors.primary[400]}
+          borderRadius="4px"
+          padding="20px"
+          
+        >
+          <Box
+            
             p="0 30px"
-            display="flex "
+            display="flex"
             justifyContent="space-between"
             alignItems="center"
           >
@@ -143,139 +330,43 @@ const Dashboard = () => {
                 fontWeight="600"
                 color={colors.grey[100]}
               >
-                Revenue Generated
+                Team Productivity
               </Typography>
               <Typography
                 variant="h3"
                 fontWeight="bold"
                 color={colors.greenAccent[500]}
               >
-                $59,342.32
+                Tasks Completed Over Time
               </Typography>
-            </Box>
-            <Box>
-              <IconButton>
-                <DownloadOutlinedIcon
-                  sx={{ fontSize: "26px", color: colors.greenAccent[500] }}
-                />
-              </IconButton>
             </Box>
           </Box>
           <Box height="250px" m="-20px 0 0 0">
-            <LineChart isDashboard={true} />
+            <LineChart data={mockProductivityData} isDashboard={true} />
           </Box>
         </Box>
-        <Box
-          gridColumn="span 4"
-          gridRow="span 2"
-          backgroundColor={colors.primary[400]}
-          overflow="auto"
-        >
+        {/* Overdue Tasks Alert */}
+        {overdueTasks.length > 0 && (
           <Box
+            gridColumn="span 12"
+            backgroundColor={colors.redAccent[700]}
+            p="20px"
+            borderRadius="4px"
             display="flex"
             justifyContent="space-between"
             alignItems="center"
-            borderBottom={`4px solid ${colors.primary[500]}`}
-            colors={colors.grey[100]}
-            p="15px"
           >
-            <Typography color={colors.grey[100]} variant="h5" fontWeight="600">
-              Recent Transactions
-            </Typography>
-          </Box>
-          {mockTransactions.map((transaction, i) => (
-            <Box
-              key={`${transaction.txId}-${i}`}
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              borderBottom={`4px solid ${colors.primary[500]}`}
-              p="15px"
-            >
-              <Box>
-                <Typography
-                  color={colors.greenAccent[500]}
-                  variant="h5"
-                  fontWeight="600"
-                >
-                  {transaction.txId}
-                </Typography>
-                <Typography color={colors.grey[100]}>
-                  {transaction.user}
-                </Typography>
-              </Box>
-              <Box color={colors.grey[100]}>{transaction.date}</Box>
-              <Box
-                backgroundColor={colors.greenAccent[500]}
-                p="5px 10px"
-                borderRadius="4px"
-              >
-                ${transaction.cost}
-              </Box>
+            <Box>
+              <Typography variant="h4" fontWeight="600">
+                ⚠️ {overdueTasks.length} Overdue Task
+                {overdueTasks.length > 1 ? "s" : ""}
+              </Typography>
+              <Typography variant="h6" mt="5px">
+                {overdueTasks.map((t) => t.title).join(", ")}
+              </Typography>
             </Box>
-          ))}
-        </Box>
-
-        {/* ROW 3 */}
-        <Box
-          gridColumn="span 4"
-          gridRow="span 2"
-          backgroundColor={colors.primary[400]}
-          p="30px"
-        >
-          <Typography variant="h5" fontWeight="600">
-            Campaign
-          </Typography>
-          <Box
-            display="flex"
-            flexDirection="column"
-            alignItems="center"
-            mt="25px"
-          >
-            <ProgressCircle size="125" />
-            <Typography
-              variant="h5"
-              color={colors.greenAccent[500]}
-              sx={{ mt: "15px" }}
-            >
-              $48,352 revenue generated
-            </Typography>
-            <Typography>Includes extra misc expenditures and costs</Typography>
           </Box>
-        </Box>
-        <Box
-          gridColumn="span 4"
-          gridRow="span 2"
-          backgroundColor={colors.primary[400]}
-        >
-          <Typography
-            variant="h5"
-            fontWeight="600"
-            sx={{ padding: "30px 30px 0 30px" }}
-          >
-            Sales Quantity
-          </Typography>
-          <Box height="250px" mt="-20px">
-            <BarChart isDashboard={true} />
-          </Box>
-        </Box>
-        <Box
-          gridColumn="span 4"
-          gridRow="span 2"
-          backgroundColor={colors.primary[400]}
-          padding="30px"
-        >
-          <Typography
-            variant="h5"
-            fontWeight="600"
-            sx={{ marginBottom: "15px" }}
-          >
-            Geography Based Traffic
-          </Typography>
-          <Box height="200px">
-            <GeographyChart isDashboard={true} />
-          </Box>
-        </Box>
+        )}
       </Box>
     </Box>
   );
