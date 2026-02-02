@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Task = require('../models/Task');
+const User = require('../models/User');
 const auth = require('../middleware/auth');
 
 // Get all tasks for logged-in user
@@ -77,6 +78,15 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'Task not found' });
     }
     res.json({ message: 'Task deleted' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.get('/users/all', auth, async (req, res) => {
+  try {
+    const users = await User.find().select('name email role');
+    res.json(users);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }

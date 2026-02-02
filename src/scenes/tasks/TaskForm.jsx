@@ -1,31 +1,28 @@
-import { Box, Button, TextField, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { Box, Button, TextField, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Checkbox, FormControlLabel } from "@mui/material";
 import { Formik } from "formik";
 import * as yup from "yup";
-import { statusOptions, priorityOptions, departmentOptions } from "../../data/mockTasks";
 
 const taskSchema = yup.object().shape({
   title: yup.string().required("Task title is required"),
   assignedTo: yup.string().required("Assignee is required"),
-  department: yup.string().required("Department is required"),
-  status: yup.string().required("Status is required"),
   priority: yup.string().required("Priority is required"),
-  dueDate: yup.date().required("Due date is required"),
+  dueDate: yup.date().nullable(),
   description: yup.string(),
-  percentComplete: yup.number().min(0).max(100).required("Progress percentage is required"),
+  project: yup.string(),
+  completed: yup.boolean(),
 });
 
-const TaskForm = ({ open, handleClose, task, onSave }) => {
+const TaskForm = ({ open, handleClose, task, onSave, users }) => {
   const isEditMode = !!task;
 
   const initialValues = {
     title: task?.title || "",
-    assignedTo: task?.assignedTo || "",
-    department: task?.department || departmentOptions[0],
-    status: task?.status || "Not Started",
-    priority: task?.priority || "Medium",
-    dueDate: task?.dueDate || "",
+    assignedTo: task?.assignedTo?._id || "",
+    priority: task?.priority || "medium",
+    dueDate: task?.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "",
     description: task?.description || "",
-    percentComplete: task?.percentComplete || 0,
+    project: task?.project || "",
+    completed: task?.completed || false,
   };
 
   const handleFormSubmit = (values) => {
@@ -40,6 +37,7 @@ const TaskForm = ({ open, handleClose, task, onSave }) => {
         onSubmit={handleFormSubmit}
         initialValues={initialValues}
         validationSchema={taskSchema}
+        enableReinitialize
       >
         {({
           values,
@@ -71,50 +69,19 @@ const TaskForm = ({ open, handleClose, task, onSave }) => {
 
                 <TextField
                   fullWidth
+                  select
                   variant="filled"
-                  label="Assigned To"
+                  label="Assign To"
                   onBlur={handleBlur}
                   onChange={handleChange}
                   value={values.assignedTo}
                   name="assignedTo"
                   error={!!touched.assignedTo && !!errors.assignedTo}
                   helperText={touched.assignedTo && errors.assignedTo}
-                />
-
-                <TextField
-                  fullWidth
-                  select
-                  variant="filled"
-                  label="Department"
-                  onBlur={handleBlur}
-                  onChange={handleChange}
-                  value={values.department}
-                  name="department"
-                  error={!!touched.department && !!errors.department}
-                  helperText={touched.department && errors.department}
                 >
-                  {departmentOptions.map((dept) => (
-                    <MenuItem key={dept} value={dept}>
-                      {dept}
-                    </MenuItem>
-                  ))}
-                </TextField>
-
-                <TextField
-                  fullWidth
-                  select
-                  variant="filled"
-                  label="Status"
-                  onBlur={handleBlur}
-                  onChange={handleChange}
-                  value={values.status}
-                  name="status"
-                  error={!!touched.status && !!errors.status}
-                  helperText={touched.status && errors.status}
-                >
-                  {statusOptions.map((status) => (
-                    <MenuItem key={status} value={status}>
-                      {status}
+                  {users.map((user) => (
+                    <MenuItem key={user._id} value={user._id}>
+                      {user.name} ({user.role})
                     </MenuItem>
                   ))}
                 </TextField>
@@ -131,11 +98,9 @@ const TaskForm = ({ open, handleClose, task, onSave }) => {
                   error={!!touched.priority && !!errors.priority}
                   helperText={touched.priority && errors.priority}
                 >
-                  {priorityOptions.map((priority) => (
-                    <MenuItem key={priority} value={priority}>
-                      {priority}
-                    </MenuItem>
-                  ))}
+                  <MenuItem value="low">Low</MenuItem>
+                  <MenuItem value="medium">Medium</MenuItem>
+                  <MenuItem value="high">High</MenuItem>
                 </TextField>
 
                 <TextField
@@ -155,15 +120,25 @@ const TaskForm = ({ open, handleClose, task, onSave }) => {
                 <TextField
                   fullWidth
                   variant="filled"
-                  type="number"
-                  label="Progress (%)"
+                  label="Project (Optional)"
                   onBlur={handleBlur}
                   onChange={handleChange}
-                  value={values.percentComplete}
-                  name="percentComplete"
-                  error={!!touched.percentComplete && !!errors.percentComplete}
-                  helperText={touched.percentComplete && errors.percentComplete}
-                  inputProps={{ min: 0, max: 100 }}
+                  value={values.project}
+                  name="project"
+                  error={!!touched.project && !!errors.project}
+                  helperText={touched.project && errors.project}
+                />
+
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={values.completed}
+                      onChange={handleChange}
+                      name="completed"
+                      color="secondary"
+                    />
+                  }
+                  label="Mark as Completed"
                 />
 
                 <TextField
