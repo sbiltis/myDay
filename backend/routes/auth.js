@@ -8,6 +8,7 @@ const auth = require('../middleware/auth');
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    console.log('Register attempt:', { name, email });
 
     // Check if user exists
     let user = await User.findOne({ email });
@@ -33,6 +34,7 @@ router.post('/register', async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Registration error:', error); // ADD THIS LINE
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

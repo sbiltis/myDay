@@ -17,6 +17,8 @@ import { ColorModeContext, useMode } from "./theme";
 import Calendar from "./scenes/calendar/calendar";
 import Tasks from "./scenes/tasks";
 import ProgressReports from "./scenes/progress";
+import Login from "./scenes/login";
+import { AuthProvider } from "./context/AuthContext";
 
 function App() {
   const [theme, colorMode] = useMode();
@@ -24,35 +26,42 @@ function App() {
   const [isCollapsed, setIsCollapsed] = useState(false); 
 
   return (
-    <ColorModeContext.Provider value={colorMode}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <div className="app">
-          <Sidebar isSidebar={isSidebar} isCollapsed={isCollapsed} />
-          <main className="content" style={{ overflow: "auto" }}>
-            <Topbar setIsSidebar={setIsSidebar} />
-            
-            
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/team" element={<Team />} />
-                <Route path="/contacts" element={<Contacts />} />
-                <Route path="/invoices" element={<Invoices />} />
-                <Route path="/form" element={<Form />} />
-                <Route path="/bar" element={<Bar />} />
-                <Route path="/pie" element={<Pie />} />
-                <Route path="/line" element={<Line />} />
-                <Route path="/faq" element={<FAQ />} />
-                <Route path="/calendar" element={<Calendar />} />
-                <Route path="/geography" element={<Geography />} />
-                <Route path="/tasks" element={<Tasks />} />
-                <Route path="/progress" element={<ProgressReports />} />
-              </Routes>
-          
-          </main>
-        </div>
-      </ThemeProvider>
-    </ColorModeContext.Provider>
+    <AuthProvider>
+      <ColorModeContext.Provider value={colorMode}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/*"
+              element={
+                <div className="app">
+                  <Sidebar isSidebar={isSidebar} isCollapsed={isCollapsed} />
+                  <main className="content" style={{ overflow: "auto" }}>
+                    <Topbar setIsSidebar={setIsSidebar} />
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/team" element={<Team />} />
+                      <Route path="/contacts" element={<Contacts />} />
+                      <Route path="/invoices" element={<Invoices />} />
+                      <Route path="/form" element={<Form />} />
+                      <Route path="/bar" element={<Bar />} />
+                      <Route path="/pie" element={<Pie />} />
+                      <Route path="/line" element={<Line />} />
+                      <Route path="/faq" element={<FAQ />} />
+                      <Route path="/calendar" element={<Calendar />} />
+                      <Route path="/geography" element={<Geography />} />
+                      <Route path="/tasks" element={<Tasks />} />
+                      <Route path="/progress" element={<ProgressReports />} />
+                    </Routes>
+                  </main>
+                </div>
+              }
+            />
+          </Routes>
+        </ThemeProvider>
+      </ColorModeContext.Provider>
+    </AuthProvider>
   );
 }
 
