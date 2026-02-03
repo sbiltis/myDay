@@ -1,4 +1,11 @@
-import { Box, Button, useTheme, TextField, MenuItem, IconButton } from "@mui/material";
+import {
+  Box,
+  Button,
+  useTheme,
+  TextField,
+  MenuItem,
+  IconButton,
+} from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { useState, useEffect } from "react";
 import EditIcon from "@mui/icons-material/Edit";
@@ -8,16 +15,18 @@ import { tokens } from "../../theme";
 import TaskForm from "./TaskForm";
 import { tasksAPI } from "../../services/api";
 import axios from "axios";
+import { useAuth } from "../../context/AuthContext";
 
 const Tasks = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  
+  const { user } = useAuth();
+
   // State for tasks and users
   const [tasks, setTasks] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // State for filters
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [completedFilter, setCompletedFilter] = useState("All");
@@ -46,11 +55,14 @@ const Tasks = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('http://localhost:5002/api/tasks/users/all', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      const response = await axios.get(
+        "http://localhost:5002/api/tasks/users/all",
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        },
+      );
       setUsers(response.data);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -58,14 +70,17 @@ const Tasks = () => {
   };
 
   // Filter the tasks
-  const filteredTasks = tasks.filter(task => {
-    const matchesPriority = priorityFilter === "All" || task.priority === priorityFilter;
-    const matchesCompleted = completedFilter === "All" || 
+  const filteredTasks = tasks.filter((task) => {
+    const matchesPriority =
+      priorityFilter === "All" || task.priority === priorityFilter;
+    const matchesCompleted =
+      completedFilter === "All" ||
       (completedFilter === "Completed" && task.completed) ||
       (completedFilter === "Incomplete" && !task.completed);
-    const matchesSearch = task.title.toLowerCase().includes(searchText.toLowerCase()) ||
-                         task.assignedTo?.name.toLowerCase().includes(searchText.toLowerCase());
-    
+    const matchesSearch =
+      task.title.toLowerCase().includes(searchText.toLowerCase()) ||
+      task.assignedTo?.name.toLowerCase().includes(searchText.toLowerCase());
+
     return matchesPriority && matchesCompleted && matchesSearch;
   });
 
@@ -86,7 +101,7 @@ const Tasks = () => {
     if (window.confirm("Are you sure you want to delete this task?")) {
       try {
         await tasksAPI.deleteTask(id);
-        setTasks(tasks.filter(task => task._id !== id));
+        setTasks(tasks.filter((task) => task._id !== id));
       } catch (error) {
         console.error("Error deleting task:", error);
         alert("Error deleting task. You may not have permission.");
@@ -100,9 +115,11 @@ const Tasks = () => {
       if (selectedTask) {
         // Edit existing task
         const response = await tasksAPI.updateTask(selectedTask._id, taskData);
-        setTasks(tasks.map(task => 
-          task._id === selectedTask._id ? response.data : task
-        ));
+        setTasks(
+          tasks.map((task) =>
+            task._id === selectedTask._id ? response.data : task,
+          ),
+        );
       } else {
         // Create new task
         const response = await tasksAPI.createTask(taskData);
@@ -110,16 +127,19 @@ const Tasks = () => {
       }
     } catch (error) {
       console.error("Error saving task:", error);
-      alert("Error saving task: " + (error.response?.data?.message || error.message));
+      alert(
+        "Error saving task: " +
+          (error.response?.data?.message || error.message),
+      );
     }
   };
 
   const columns = [
-    { 
-      field: "_id", 
-      headerName: "ID", 
+    {
+      field: "_id",
+      headerName: "ID",
       flex: 0.5,
-      renderCell: ({ row }) => row._id.slice(-6) // Show last 6 chars
+      renderCell: ({ row }) => row._id.slice(-6), // Show last 6 chars
     },
     {
       field: "title",
@@ -131,13 +151,13 @@ const Tasks = () => {
       field: "assignedTo",
       headerName: "Assigned To",
       flex: 1,
-      renderCell: ({ row }) => row.assignedTo?.name || "Unassigned"
+      renderCell: ({ row }) => row.assignedTo?.name || "Unassigned",
     },
     {
       field: "createdBy",
       headerName: "Created By",
       flex: 1,
-      renderCell: ({ row }) => row.createdBy?.name || "Unknown"
+      renderCell: ({ row }) => row.createdBy?.name || "Unknown",
     },
     {
       field: "completed",
@@ -177,8 +197,8 @@ const Tasks = () => {
               priority === "high"
                 ? colors.redAccent[600]
                 : priority === "medium"
-                ? colors.blueAccent[700]
-                : colors.grey[700]
+                  ? colors.blueAccent[700]
+                  : colors.grey[700]
             }
             borderRadius="4px"
           >
@@ -192,34 +212,38 @@ const Tasks = () => {
       headerName: "Due Date",
       flex: 1,
       renderCell: ({ row }) => {
-        return row.dueDate ? new Date(row.dueDate).toLocaleDateString() : "No due date";
-      }
+        return row.dueDate
+          ? new Date(row.dueDate).toLocaleDateString()
+          : "No due date";
+      },
     },
     {
       field: "project",
       headerName: "Project",
       flex: 1,
-      renderCell: ({ row }) => row.project || "General"
+      renderCell: ({ row }) => row.project || "General",
     },
     {
       field: "actions",
       headerName: "Actions",
       flex: 1,
       renderCell: ({ row }) => {
+        const canDelete =
+          user?.role === "club_lead" || user?.role === "project_lead";
+
         return (
           <Box display="flex" gap="10px">
-            <IconButton 
-              onClick={() => handleEditTask(row)}
-              color="info"
-            >
+            <IconButton onClick={() => handleEditTask(row)} color="info">
               <EditIcon />
             </IconButton>
-            <IconButton 
-              onClick={() => handleDeleteTask(row._id)}
-              color="error"
-            >
-              <DeleteIcon />
-            </IconButton>
+            {canDelete && (
+              <IconButton
+                onClick={() => handleDeleteTask(row._id)}
+                color="error"
+              >
+                <DeleteIcon />
+              </IconButton>
+            )}
           </Box>
         );
       },
@@ -229,9 +253,14 @@ const Tasks = () => {
   return (
     <Box m="20px">
       <Header title="TASK TRACKER" subtitle="Managing Project Tasks" />
-      
+
       {/* Create Button */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb="20px">
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb="20px"
+      >
         <Box></Box>
         <Button
           variant="contained"
@@ -243,12 +272,7 @@ const Tasks = () => {
       </Box>
 
       {/* Filter Controls */}
-      <Box 
-        display="flex" 
-        gap="20px" 
-        mb="20px"
-        flexWrap="wrap"
-      >
+      <Box display="flex" gap="20px" mb="20px" flexWrap="wrap">
         <TextField
           label="Search Tasks"
           variant="filled"
@@ -256,7 +280,7 @@ const Tasks = () => {
           onChange={(e) => setSearchText(e.target.value)}
           sx={{ flex: "1 1 300px" }}
         />
-        
+
         <TextField
           select
           label="Status"
@@ -312,16 +336,16 @@ const Tasks = () => {
           },
         }}
       >
-        <DataGrid 
-          rows={filteredTasks} 
-          columns={columns} 
+        <DataGrid
+          rows={filteredTasks}
+          columns={columns}
           getRowId={(row) => row._id}
           loading={loading}
         />
       </Box>
 
       {/* Task Form Dialog */}
-      <TaskForm 
+      <TaskForm
         open={formOpen}
         handleClose={() => setFormOpen(false)}
         task={selectedTask}
