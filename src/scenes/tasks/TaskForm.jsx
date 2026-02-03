@@ -56,46 +56,25 @@ const TaskForm = ({ open, handleClose, task, onSave, users }) => {
   // Determine what status options are available
   // Determine what status options are available
   const getStatusOptions = () => {
-    if (!isEditMode) return []; // New tasks start as in_progress automatically
+    const memberOptions = [
+      { value: "not_started", label: "Not Started" },
+      { value: "in_progress", label: "In Progress" },
+      { value: "submit_for_review", label: "Submit for Review" },
+    ];
 
+    const leaderOnlyOptions = [
+      { value: "icebox", label: "Icebox" },
+      { value: "approved", label: "Approved" },
+      { value: "needs_revision", label: "Needs Revision" },
+    ];
+
+    // Leaders get all options
     if (isLeader) {
-      // Leaders can approve or request revisions for submitted tasks
-      if (task?.status === "submitted_for_review") {
-        return [
-          { value: "submitted_for_review", label: "Keep Pending" },
-          { value: "approved", label: "Approve Task" },
-          { value: "needs_revision", label: "Request Revision" },
-        ];
-      }
-      // All other statuses for leaders
-      return [
-        {
-          value: task?.status,
-          label: task?.status.replace(/_/g, " ").toUpperCase(),
-        },
-      ];
+      return [...memberOptions, ...leaderOnlyOptions];
     }
 
-    if (isAssignedMember) {
-      // Members can submit for review or move back to in progress
-      if (task?.status === "in_progress") {
-        return [
-          { value: "in_progress", label: "Keep In Progress" },
-          { value: "submitted_for_review", label: "Submit for Review" },
-        ];
-      }
-      // Members can resume work on tasks that need revision
-      if (task?.status === "needs_revision") {
-        return [
-          { value: "needs_revision", label: "Needs Revision" },
-          { value: "in_progress", label: "Resume Work" },
-          { value: "submitted_for_review", label: "Resubmit for Review" },
-        ];
-      }
-    }
-
-    // Default: show current status only (read-only)
-    return [];
+    // Members only get member options
+    return memberOptions;
   };
 
   const statusOptions = getStatusOptions();

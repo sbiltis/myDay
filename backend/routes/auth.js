@@ -41,18 +41,29 @@ router.post('/register', async (req, res) => {
 
 // Login
 router.post('/login', async (req, res) => {
+  console.log('=== LOGIN REQUEST ===');
+  console.log('Request body:', req.body);
+  
   try {
     const { email, password } = req.body;
+    
+    console.log('Looking for user:', email);
 
     // Check if user exists
     const user = await User.findOne({ email });
+    console.log('User found:', user ? 'YES' : 'NO');
+    
     if (!user) {
+      console.log('User not found');
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     // Check password
     const isMatch = await user.comparePassword(password);
+    console.log('Password match:', isMatch);
+    
     if (!isMatch) {
+      console.log('Password mismatch');
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
@@ -60,16 +71,20 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: '7d'
     });
+    
+    console.log('Login successful, sending token');
 
     res.json({
       token,
       user: {
         id: user._id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        role: user.role  // ADD THIS - make sure role is included
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

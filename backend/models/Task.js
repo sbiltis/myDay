@@ -20,11 +20,7 @@ const taskSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  status: {
-    type: String,
-    enum: ['in_progress', 'submitted_for_review', 'approved', 'needs_revision'],
-    default: 'in_progress'
-  },
+  // DELETE status field entirely
   priority: {
     type: String,
     enum: ['low', 'medium', 'high'],
@@ -35,6 +31,8 @@ const taskSchema = new mongoose.Schema({
   },
   project: {
     type: String,
+    enum: ['not_started', 'in_progress', 'submit_for_review', 'icebox', 'approved', 'needs_revision'],
+    default: 'not_started',
     trim: true
   },
   feedback: {
