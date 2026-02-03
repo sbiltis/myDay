@@ -28,6 +28,7 @@ const Tasks = () => {
   const [loading, setLoading] = useState(true);
 
   // State for filters
+  const [statusFilter, setStatusFilter] = useState("All");
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [completedFilter, setCompletedFilter] = useState("All");
   const [searchText, setSearchText] = useState("");
@@ -73,15 +74,13 @@ const Tasks = () => {
   const filteredTasks = tasks.filter((task) => {
     const matchesPriority =
       priorityFilter === "All" || task.priority === priorityFilter;
-    const matchesCompleted =
-      completedFilter === "All" ||
-      (completedFilter === "Completed" && task.completed) ||
-      (completedFilter === "Incomplete" && !task.completed);
+    const matchesStatus =
+      statusFilter === "All" || task.status === statusFilter;
     const matchesSearch =
       task.title.toLowerCase().includes(searchText.toLowerCase()) ||
       task.assignedTo?.name.toLowerCase().includes(searchText.toLowerCase());
 
-    return matchesPriority && matchesCompleted && matchesSearch;
+    return matchesPriority && matchesStatus && matchesSearch;
   });
 
   // Handle creating new task
@@ -160,10 +159,26 @@ const Tasks = () => {
       renderCell: ({ row }) => row.createdBy?.name || "Unknown",
     },
     {
-      field: "completed",
-      headerName: "Status",
-      flex: 1,
+      field: "project",
+      headerName: "Project Phase",
+      flex: 1.2,
       renderCell: ({ row }) => {
+        const projectLabels = {
+          not_started: "Not Started",
+          in_progress: "In Progress",
+          submit_for_review: "Submit for Review",
+          icebox: "Icebox",
+        };
+
+        const projectColors = {
+          not_started: colors.grey[700],
+          in_progress: colors.blueAccent[700],
+          submit_for_review: colors.primary[500],
+          icebox: colors.redAccent[700],
+        };
+
+        if (!row.project) return "None";
+
         return (
           <Box
             width="100%"
@@ -171,12 +186,10 @@ const Tasks = () => {
             p="5px"
             display="flex"
             justifyContent="center"
-            backgroundColor={
-              row.completed ? colors.greenAccent[600] : colors.blueAccent[700]
-            }
+            backgroundColor={projectColors[row.project] || colors.grey[700]}
             borderRadius="4px"
           >
-            {row.completed ? "Completed" : "In Progress"}
+            {projectLabels[row.project] || row.project}
           </Box>
         );
       },
@@ -216,12 +229,6 @@ const Tasks = () => {
           ? new Date(row.dueDate).toLocaleDateString()
           : "No due date";
       },
-    },
-    {
-      field: "project",
-      headerName: "Project",
-      flex: 1,
-      renderCell: ({ row }) => row.project || "General",
     },
     {
       field: "actions",
@@ -285,13 +292,15 @@ const Tasks = () => {
           select
           label="Status"
           variant="filled"
-          value={completedFilter}
-          onChange={(e) => setCompletedFilter(e.target.value)}
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
           sx={{ flex: "1 1 150px" }}
         >
-          <MenuItem value="All">All</MenuItem>
-          <MenuItem value="Completed">Completed</MenuItem>
-          <MenuItem value="Incomplete">In Progress</MenuItem>
+          <MenuItem value="All">All Statuses</MenuItem>
+          <MenuItem value="in_progress">In Progress</MenuItem>
+          <MenuItem value="submitted_for_review">Pending Review</MenuItem>
+          <MenuItem value="approved">Approved</MenuItem>
+          <MenuItem value="needs_revision">Needs Revision</MenuItem>
         </TextField>
 
         <TextField

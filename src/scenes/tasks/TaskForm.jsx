@@ -1,6 +1,21 @@
-import { Box, Button, TextField, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Checkbox, FormControlLabel } from "@mui/material";
+import {
+  Box,
+  Button,
+  TextField,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+} from "@mui/material";
 import { Formik } from "formik";
 import * as yup from "yup";
+import { useAuth } from "../../context/AuthContext";
 
 const taskSchema = yup.object().shape({
   title: yup.string().required("Task title is required"),
@@ -9,26 +24,82 @@ const taskSchema = yup.object().shape({
   dueDate: yup.date().nullable(),
   description: yup.string(),
   project: yup.string(),
-  completed: yup.boolean(),
+  status: yup.string(),
+  feedback: yup.string(),
 });
 
 const TaskForm = ({ open, handleClose, task, onSave, users }) => {
+  const { user: currentUser } = useAuth();
   const isEditMode = !!task;
+  const isLeader =
+    currentUser?.role === "club_lead" || currentUser?.role === "project_lead";
+  const isAssignedMember = task?.assignedTo?._id === currentUser?._id;
 
   const initialValues = {
     title: task?.title || "",
     assignedTo: task?.assignedTo?._id || "",
     priority: task?.priority || "medium",
-    dueDate: task?.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "",
+    dueDate: task?.dueDate
+      ? new Date(task.dueDate).toISOString().split("T")[0]
+      : "",
     description: task?.description || "",
     project: task?.project || "",
-    completed: task?.completed || false,
+    status: task?.status || "in_progress",
+    feedback: task?.feedback || "",
   };
 
   const handleFormSubmit = (values) => {
     onSave(values);
     handleClose();
   };
+
+  // Determine what status options are available
+  // Determine what status options are available
+  const getStatusOptions = () => {
+    if (!isEditMode) return []; // New tasks start as in_progress automatically
+
+    if (isLeader) {
+      // Leaders can approve or request revisions for submitted tasks
+      if (task?.status === "submitted_for_review") {
+        return [
+          { value: "submitted_for_review", label: "Keep Pending" },
+          { value: "approved", label: "Approve Task" },
+          { value: "needs_revision", label: "Request Revision" },
+        ];
+      }
+      // All other statuses for leaders
+      return [
+        {
+          value: task?.status,
+          label: task?.status.replace(/_/g, " ").toUpperCase(),
+        },
+      ];
+    }
+
+    if (isAssignedMember) {
+      // Members can submit for review or move back to in progress
+      if (task?.status === "in_progress") {
+        return [
+          { value: "in_progress", label: "Keep In Progress" },
+          { value: "submitted_for_review", label: "Submit for Review" },
+        ];
+      }
+      // Members can resume work on tasks that need revision
+      if (task?.status === "needs_revision") {
+        return [
+          { value: "needs_revision", label: "Needs Revision" },
+          { value: "in_progress", label: "Resume Work" },
+          { value: "submitted_for_review", label: "Resubmit for Review" },
+        ];
+      }
+    }
+
+    // Default: show current status only (read-only)
+    return [];
+  };
+
+  const statusOptions = getStatusOptions();
+  const canEditStatus = statusOptions.length > 1;
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
@@ -46,6 +117,7 @@ const TaskForm = ({ open, handleClose, task, onSave, users }) => {
           handleBlur,
           handleChange,
           handleSubmit,
+          setFieldValue,
         }) => (
           <form onSubmit={handleSubmit}>
             <DialogContent>
@@ -65,6 +137,7 @@ const TaskForm = ({ open, handleClose, task, onSave, users }) => {
                   error={!!touched.title && !!errors.title}
                   helperText={touched.title && errors.title}
                   sx={{ gridColumn: "span 2" }}
+                  disabled={!isLeader && !isAssignedMember}
                 />
 
                 <TextField
@@ -78,12 +151,26 @@ const TaskForm = ({ open, handleClose, task, onSave, users }) => {
                   name="assignedTo"
                   error={!!touched.assignedTo && !!errors.assignedTo}
                   helperText={touched.assignedTo && errors.assignedTo}
+                  disabled={isEditMode && !isLeader} // CHANGE THIS LINE - only leaders can reassign existing tasks
                 >
-                  {users.map((user) => (
-                    <MenuItem key={user._id} value={user._id}>
-                      {user.name} ({user.role})
-                    </MenuItem>
-                  ))}
+                  {users
+                    .filter((u) => {
+                      // Members can only assign to other members when creating
+                      if (!isEditMode && currentUser?.role === "member") {
+                        return u.role === "member";
+                      }
+                      // Project leads can assign to members and project leads
+                      if (!isEditMode && currentUser?.role === "project_lead") {
+                        return u.role === "member" || u.role === "project_lead";
+                      }
+                      // Leaders can assign to anyone
+                      return true;
+                    })
+                    .map((user) => (
+                      <MenuItem key={user._id} value={user._id}>
+                        {user.name} ({user.role})
+                      </MenuItem>
+                    ))}
                 </TextField>
 
                 <TextField
@@ -97,6 +184,7 @@ const TaskForm = ({ open, handleClose, task, onSave, users }) => {
                   name="priority"
                   error={!!touched.priority && !!errors.priority}
                   helperText={touched.priority && errors.priority}
+                  disabled={!isLeader && !isAssignedMember}
                 >
                   <MenuItem value="low">Low</MenuItem>
                   <MenuItem value="medium">Medium</MenuItem>
@@ -115,31 +203,97 @@ const TaskForm = ({ open, handleClose, task, onSave, users }) => {
                   error={!!touched.dueDate && !!errors.dueDate}
                   helperText={touched.dueDate && errors.dueDate}
                   InputLabelProps={{ shrink: true }}
+                  disabled={!isLeader && !isAssignedMember}
                 />
 
                 <TextField
                   fullWidth
+                  select
                   variant="filled"
-                  label="Project (Optional)"
+                  label="Project Status"
                   onBlur={handleBlur}
                   onChange={handleChange}
                   value={values.project}
                   name="project"
                   error={!!touched.project && !!errors.project}
                   helperText={touched.project && errors.project}
-                />
+                  disabled={!isLeader && !isAssignedMember}
+                >
+                  <MenuItem value="">None</MenuItem>
+                  <MenuItem value="not_started">Not Started</MenuItem>
+                  <MenuItem value="in_progress">In Progress</MenuItem>
+                  <MenuItem value="submit_for_review">
+                    Submit for Review
+                  </MenuItem>
+                  <MenuItem value="icebox">Icebox</MenuItem>
+                </TextField>
 
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={values.completed}
+                {/* Status Selection - only show if editing and have options */}
+                {isEditMode && canEditStatus && (
+                  <FormControl sx={{ gridColumn: "span 2" }}>
+                    <FormLabel>Task Status</FormLabel>
+                    <RadioGroup
+                      row
+                      name="status"
+                      value={values.status}
                       onChange={handleChange}
-                      name="completed"
-                      color="secondary"
+                    >
+                      {statusOptions.map((option) => (
+                        <FormControlLabel
+                          key={option.value}
+                          value={option.value}
+                          control={<Radio />}
+                          label={option.label}
+                        />
+                      ))}
+                    </RadioGroup>
+                  </FormControl>
+                )}
+
+                {/* Feedback field - only for leaders when reviewing */}
+                {isEditMode &&
+                  isLeader &&
+                  task?.status === "submitted_for_review" &&
+                  values.status === "needs_revision" && (
+                    <TextField
+                      fullWidth
+                      variant="filled"
+                      multiline
+                      rows={3}
+                      label="Feedback (Required for Revision)"
+                      onBlur={handleBlur}
+                      onChange={handleChange}
+                      value={values.feedback}
+                      name="feedback"
+                      error={!!touched.feedback && !!errors.feedback}
+                      helperText={touched.feedback && errors.feedback}
+                      sx={{ gridColumn: "span 2" }}
                     />
-                  }
-                  label="Mark as Completed"
-                />
+                  )}
+
+                {/* Show existing feedback if task needs revision */}
+                {isEditMode &&
+                  task?.status === "needs_revision" &&
+                  task?.feedback && (
+                    <Box
+                      sx={{
+                        gridColumn: "span 2",
+                        p: 2,
+                        bgcolor: "error.dark",
+                        borderRadius: 1,
+                      }}
+                    >
+                      <TextField
+                        fullWidth
+                        variant="filled"
+                        multiline
+                        rows={3}
+                        label="Feedback from Reviewer"
+                        value={task.feedback}
+                        InputProps={{ readOnly: true }}
+                      />
+                    </Box>
+                  )}
 
                 <TextField
                   fullWidth
@@ -154,6 +308,7 @@ const TaskForm = ({ open, handleClose, task, onSave, users }) => {
                   error={!!touched.description && !!errors.description}
                   helperText={touched.description && errors.description}
                   sx={{ gridColumn: "span 2" }}
+                  disabled={!isLeader && !isAssignedMember}
                 />
               </Box>
             </DialogContent>

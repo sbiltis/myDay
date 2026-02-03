@@ -20,9 +20,10 @@ const taskSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  completed: {
-    type: Boolean,
-    default: false
+  status: {
+    type: String,
+    enum: ['in_progress', 'submitted_for_review', 'approved', 'needs_revision'],
+    default: 'in_progress'
   },
   priority: {
     type: String,
@@ -35,6 +36,17 @@ const taskSchema = new mongoose.Schema({
   project: {
     type: String,
     trim: true
+  },
+  feedback: {
+    type: String,
+    trim: true
+  },
+  reviewedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  reviewedAt: {
+    type: Date
   }
 }, {
   timestamps: true
