@@ -5,21 +5,37 @@ import { mockTasks } from "../../data/mockTasks";
 import { mockProgressReports } from "../../data/progressReportData";
 import LineChart from "../../components/LineChart";
 import { mockProductivityData } from "../../data/mockTasks";
+import { useState, useEffect } from "react";
+import { tasksAPI } from "../../services/api";
 
 const Dashboard = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch tasks on mount
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const response = await tasksAPI.getAllTasks();
+        setTasks(response.data);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+        setLoading(false);
+      }
+    };
+    fetchTasks();
+  }, []);
+
   // Calculate task metrics
-  const totalTasks = mockTasks.length;
-  const completedTasks = mockTasks.filter(
-    (t) => t.status === "Completed",
-  ).length;
-  const inProgressTasks = mockTasks.filter(
-    (t) => t.status === "In Progress",
-  ).length;
-  const blockedTasks = mockTasks.filter((t) => t.status === "Blocked").length;
-  const completionRate = Math.round((completedTasks / totalTasks) * 100);
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter((t) => t.completed).length;
+  const inProgressTasks = tasks.filter((t) => !t.completed).length;
+  const completionRate =
+    totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   // Calculate progress report metrics
   const getCurrentWeekReports = () => {
@@ -37,20 +53,70 @@ const Dashboard = () => {
     0,
   );
 
-  // Get overdue and upcoming tasks
-  const today = new Date().toISOString().split("T")[0];
-  const overdueTasks = mockTasks.filter(
-    (task) => task.status !== "Completed" && task.dueDate < today,
+  // Get overdue and upcoming tasks using REAL data
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const overdueTasks = tasks.filter(
+    (task) => !task.completed && task.dueDate && new Date(task.dueDate) < today,
   );
 
   const nextWeek = new Date();
   nextWeek.setDate(nextWeek.getDate() + 7);
-  const upcomingTasks = mockTasks.filter(
+
+  const upcomingTasks = tasks.filter(
     (task) =>
-      task.status !== "Completed" &&
-      task.dueDate >= today &&
-      task.dueDate <= nextWeek.toISOString().split("T")[0],
+      !task.completed &&
+      task.dueDate &&
+      new Date(task.dueDate) >= today &&
+      new Date(task.dueDate) <= nextWeek,
   );
+
+  // Generate productivity chart data from real tasks
+  const generateProductivityData = () => {
+    const last7Days = [];
+    const completedByDay = {};
+    const overdueByDay = {};
+
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split("T")[0];
+      last7Days.push(dateStr);
+      completedByDay[dateStr] = 0;
+      overdueByDay[dateStr] = 0;
+    }
+
+    // Count completed tasks per day
+    tasks.forEach((task) => {
+      if (task.completed && task.updatedAt) {
+        const taskDate = new Date(task.updatedAt).toISOString().split("T")[0];
+        if (completedByDay[taskDate] !== undefined) {
+          completedByDay[taskDate]++;
+        }
+      }
+    });
+
+    // Count overdue tasks per day
+    last7Days.forEach((dateStr) => {
+      const checkDate = new Date(dateStr);
+      overdueByDay[dateStr] = tasks.filter(
+        (task) =>
+          !task.completed && task.dueDate && new Date(task.dueDate) < checkDate,
+      ).length;
+    });
+
+    return last7Days.map((date) => ({
+      date: new Date(date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      completed: completedByDay[date],
+      overdue: overdueByDay[date],
+    }));
+  };
+
+  const productivityData = generateProductivityData();
 
   return (
     <Box m="20px">
@@ -152,6 +218,7 @@ const Dashboard = () => {
         </Box>
 
         {/* Stat Card 4: Blocked Tasks */}
+        {/* Stat Card 4: Overdue Tasks */}
         <Box
           gridColumn="span 3"
           backgroundColor={colors.primary[400]}
@@ -166,18 +233,18 @@ const Dashboard = () => {
               variant="h3"
               fontWeight="bold"
               color={
-                blockedTasks > 0
+                overdueTasks.length > 0
                   ? colors.redAccent[500]
                   : colors.greenAccent[500]
               }
             >
-              {blockedTasks}
+              {overdueTasks.length}
             </Typography>
             <Typography variant="h5" color={colors.grey[100]}>
-              Blocked Tasks
+              Overdue Tasks
             </Typography>
             <Typography variant="h6" color={colors.grey[300]} mt="5px">
-              {blockedTasks > 0 ? "Need attention" : "All clear!"}
+              {overdueTasks.length > 0 ? "Need attention" : "All on track!"}
             </Typography>
           </Box>
         </Box>
@@ -226,7 +293,7 @@ const Dashboard = () => {
                     {task.title}
                   </Typography>
                   <Typography color={colors.grey[100]} fontSize="14px">
-                    {task.assignedTo} • {task.department}
+                    {task.assignedTo?.name} • {task.project || 'General'}
                   </Typography>
                 </Box>
                 <Box
@@ -315,10 +382,8 @@ const Dashboard = () => {
           backgroundColor={colors.primary[400]}
           borderRadius="4px"
           padding="20px"
-          
         >
           <Box
-            
             p="0 30px"
             display="flex"
             justifyContent="space-between"
@@ -342,7 +407,7 @@ const Dashboard = () => {
             </Box>
           </Box>
           <Box height="250px" m="-20px 0 0 0">
-            <LineChart data={mockProductivityData} isDashboard={true} />
+            <LineChart data={productivityData} isDashboard={true} />
           </Box>
         </Box>
         {/* Overdue Tasks Alert */}

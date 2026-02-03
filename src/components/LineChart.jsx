@@ -6,14 +6,22 @@ const LineChart = ({ data, isDashboard = false }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-  // Transform data into nivo format
+  // Transform data into nivo format with two lines
   const chartData = [
     {
       id: "Tasks Completed",
       color: colors.greenAccent[500],
       data: data.map(item => ({
         x: item.date,
-        y: item.tasks
+        y: item.completed
+      }))
+    },
+    {
+      id: "Overdue Tasks",
+      color: colors.redAccent[500],
+      data: data.map(item => ({
+        x: item.date,
+        y: item.overdue
       }))
     }
   ];
@@ -54,7 +62,7 @@ const LineChart = ({ data, isDashboard = false }) => {
           },
         },
       }}
-      colors={colors.greenAccent[500]}
+      colors={[colors.greenAccent[500], colors.redAccent[500]]}
       margin={{ top: 50, right: 110, bottom: 50, left: 60 }}
       xScale={{ type: "point" }}
       yScale={{
@@ -83,7 +91,7 @@ const LineChart = ({ data, isDashboard = false }) => {
         tickSize: 5,
         tickPadding: 5,
         tickRotation: 0,
-        legend: isDashboard ? undefined : "Tasks Completed",
+        legend: isDashboard ? undefined : "Tasks",
         legendOffset: -50,
         legendPosition: "middle",
       }}

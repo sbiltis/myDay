@@ -85,14 +85,10 @@ export const getProductivityData = (tasks) => {
 
 // Mock data for last 30 days of productivity
 export const mockProductivityData = [
-  { date: "2026-01-05", tasks: 2 },
-  { date: "2026-01-08", tasks: 1 },
-  { date: "2026-01-12", tasks: 3 },
-  { date: "2026-01-15", tasks: 2 },
-  { date: "2026-01-18", tasks: 4 },
-  { date: "2026-01-22", tasks: 2 },
-  { date: "2026-01-25", tasks: 5 },
-  { date: "2026-01-28", tasks: 3 },
-  { date: "2026-01-30", tasks: 1 },
-  { date: "2026-02-01", tasks: 2 },
+  { date: "Jan 1", completed: 12, overdue: 3 },
+  { date: "Jan 8", completed: 18, overdue: 2 },
+  { date: "Jan 15", completed: 15, overdue: 5 },
+  { date: "Jan 22", completed: 22, overdue: 1 },
+  { date: "Jan 29", completed: 28, overdue: 4 },
+  { date: "Feb 5", completed: 25, overdue: 2 },
 ];
