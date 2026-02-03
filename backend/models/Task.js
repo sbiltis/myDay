@@ -1,7 +1,12 @@
 const mongoose = require('mongoose');
 
 const taskSchema = new mongoose.Schema({
-  userId: {
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
@@ -26,6 +31,10 @@ const taskSchema = new mongoose.Schema({
   },
   dueDate: {
     type: Date
+  },
+  project: {
+    type: String,
+    trim: true
   }
 }, {
   timestamps: true
