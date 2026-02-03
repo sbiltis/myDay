@@ -64,22 +64,23 @@ router.get("/:id", auth, async (req, res) => {
 
 // Create new task (anyone can create)
 // Create new task (anyone can create)
-router.post('/', auth, async (req, res) => {
-  console.log('=== CREATE TASK REQUEST ===');
-  console.log('User ID:', req.userId);
-  console.log('Request body:', req.body);
-  
+router.post("/", auth, async (req, res) => {
+  console.log("=== CREATE TASK REQUEST ===");
+  console.log("User ID:", req.userId);
+  console.log("Request body:", req.body);
+
   try {
-    const { title, description, priority, dueDate, assignedTo, project } = req.body;
-    
-    console.log('Assigned to user ID:', assignedTo);
-    
+    const { title, description, priority, dueDate, assignedTo, project } =
+      req.body;
+
+    console.log("Assigned to user ID:", assignedTo);
+
     // Verify assignedTo user exists
     const assignedUser = await User.findById(assignedTo);
-    console.log('Found assigned user:', assignedUser);
-    
+    console.log("Found assigned user:", assignedUser);
+
     if (!assignedUser) {
-      return res.status(400).json({ message: 'Assigned user not found' });
+      return res.status(400).json({ message: "Assigned user not found" });
     }
 
     const task = new Task({
@@ -90,81 +91,76 @@ router.post('/', auth, async (req, res) => {
       priority,
       dueDate,
       project,
-      status: 'in_progress'  // ADD THIS
     });
 
-    console.log('About to save task:', task);
+    console.log("About to save task:", task);
     await task.save();
-    console.log('Task saved successfully!');
-    
+    console.log("Task saved successfully!");
+
     // Populate the user info before sending response
-    await task.populate('createdBy', 'name email');
-    await task.populate('assignedTo', 'name email');
-    
+    await task.populate("createdBy", "name email");
+    await task.populate("assignedTo", "name email");
+
     res.status(201).json(task);
   } catch (error) {
-    console.error('Error creating task:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error("Error creating task:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
-// Update task (only leaders can update any task, members can only update their own)
 // Update task with review workflow
-router.put('/:id', auth, async (req, res) => {
+router.put("/:id", auth, async (req, res) => {
   try {
-    const { title, description, priority, dueDate, assignedTo, project, status, feedback } = req.body;
-    
+    const {
+      title,
+      description,
+      priority,
+      dueDate,
+      assignedTo,
+      project,
+      status,
+      feedback,
+    } = req.body;
+
     const task = await Task.findById(req.params.id);
     if (!task) {
-      return res.status(404).json({ message: 'Task not found' });
+      return res.status(404).json({ message: "Task not found" });
     }
 
     const user = await User.findById(req.userId);
-    const isLeader = user.role === 'club_lead' || user.role === 'project_lead';
+    const isLeader = user.role === "club_lead" || user.role === "project_lead";
     const isAssignedMember = task.assignedTo.toString() === req.userId;
 
-    // Permission checks
+    // Permission: only assigned member or leaders can edit
     if (!isLeader && !isAssignedMember) {
-      return res.status(403).json({ message: 'Not authorized to update this task' });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update this task" });
     }
 
-    // Members can only submit for review or work on needs_revision tasks
-    if (!isLeader) {
-      if (status && status !== 'submitted_for_review' && status !== 'in_progress') {
-        return res.status(403).json({ message: 'Members can only submit tasks for review' });
-      }
-      if (task.status === 'approved') {
-        return res.status(403).json({ message: 'Cannot edit approved tasks' });
-      }
+    // Members cannot edit approved tasks
+    if (!isLeader && task.status === "approved") {
+      return res.status(403).json({ message: "Cannot edit approved tasks" });
     }
 
-    // Update basic fields
+    // Update basic fields (anyone can update these)
     if (title) task.title = title;
     if (description !== undefined) task.description = description;
     if (priority) task.priority = priority;
     if (dueDate !== undefined) task.dueDate = dueDate;
-    if (project !== undefined) task.project = project;
+    if (project !== undefined) {
+      task.project = project;
+      task.projectUpdatedAt = new Date(); // ADD THIS
+    }
 
-    // Handle status changes
-    if (status) {
-      // Leaders can approve or request revisions
-      if (isLeader && (status === 'approved' || status === 'needs_revision')) {
-        task.status = status;
+    // Handle status changes - ONLY LEADERS can change status
+    if (status && isLeader) {
+      task.status = status;
+      task.statusUpdatedAt = new Date(); // ADD THIS
+      if (status === "approved" || status === "needs_revision") {
         task.reviewedBy = req.userId;
         task.reviewedAt = new Date();
         if (feedback) task.feedback = feedback;
-      }
-      // Members can submit for review
-      else if (isAssignedMember && status === 'submitted_for_review') {
-        task.status = status;
-        task.feedback = ''; // Clear previous feedback
-      }
-      // Members can move back to in_progress from needs_revision
-      else if (isAssignedMember && status === 'in_progress' && task.status === 'needs_revision') {
-        task.status = status;
-      }
-      else {
-        task.status = status;
       }
     }
 
@@ -174,16 +170,16 @@ router.put('/:id', auth, async (req, res) => {
     }
 
     await task.save();
-    await task.populate('createdBy', 'name email');
-    await task.populate('assignedTo', 'name email');
+    await task.populate("createdBy", "name email");
+    await task.populate("assignedTo", "name email");
     if (task.reviewedBy) {
-      await task.populate('reviewedBy', 'name email');
+      await task.populate("reviewedBy", "name email");
     }
-    
+
     res.json(task);
   } catch (error) {
-    console.error('Error updating task:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error("Error updating task:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 

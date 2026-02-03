@@ -44,7 +44,7 @@ const TaskForm = ({ open, handleClose, task, onSave, users }) => {
       : "",
     description: task?.description || "",
     project: task?.project || "",
-    status: task?.status || "in_progress",
+    status: task?.status || "",
     feedback: task?.feedback || "",
   };
 
@@ -55,46 +55,29 @@ const TaskForm = ({ open, handleClose, task, onSave, users }) => {
 
   // Determine what status options are available
   // Determine what status options are available
+  // Determine what status options are available
   const getStatusOptions = () => {
-    if (!isEditMode) return []; // New tasks start as in_progress automatically
+    if (!isEditMode) {
+      return [];
+    }
 
+    // Only leaders can see/change status
     if (isLeader) {
-      // Leaders can approve or request revisions for submitted tasks
-      if (task?.status === "submitted_for_review") {
-        return [
-          { value: "submitted_for_review", label: "Keep Pending" },
-          { value: "approved", label: "Approve Task" },
-          { value: "needs_revision", label: "Request Revision" },
-        ];
-      }
-      // All other statuses for leaders
       return [
-        {
-          value: task?.status,
-          label: task?.status.replace(/_/g, " ").toUpperCase(),
-        },
+        { value: "icebox", label: "Icebox" },
+        { value: "approved", label: "Approved" },
+        { value: "needs_revision", label: "Needs Revision" },
       ];
     }
 
-    if (isAssignedMember) {
-      // Members can submit for review or move back to in progress
-      if (task?.status === "in_progress") {
-        return [
-          { value: "in_progress", label: "Keep In Progress" },
-          { value: "submitted_for_review", label: "Submit for Review" },
-        ];
-      }
-      // Members can resume work on tasks that need revision
-      if (task?.status === "needs_revision") {
-        return [
-          { value: "needs_revision", label: "Needs Revision" },
-          { value: "in_progress", label: "Resume Work" },
-          { value: "submitted_for_review", label: "Resubmit for Review" },
-        ];
-      }
+    if (task?.status === "needs_revision") {
+      return [
+        { value: "needs_revision", label: "Needs Revision" },
+        { value: "in_progress", label: "In Progress" },
+      ];
     }
 
-    // Default: show current status only (read-only)
+    // Members don't see status options at all
     return [];
   };
 
@@ -217,7 +200,6 @@ const TaskForm = ({ open, handleClose, task, onSave, users }) => {
                   name="project"
                   error={!!touched.project && !!errors.project}
                   helperText={touched.project && errors.project}
-                  disabled={!isLeader && !isAssignedMember}
                 >
                   <MenuItem value="">None</MenuItem>
                   <MenuItem value="not_started">Not Started</MenuItem>
@@ -225,11 +207,10 @@ const TaskForm = ({ open, handleClose, task, onSave, users }) => {
                   <MenuItem value="submit_for_review">
                     Submit for Review
                   </MenuItem>
-                  <MenuItem value="icebox">Icebox</MenuItem>
                 </TextField>
 
                 {/* Status Selection - only show if editing and have options */}
-                {isEditMode && canEditStatus && (
+                {isEditMode && isLeader && (
                   <FormControl sx={{ gridColumn: "span 2" }}>
                     <FormLabel>Task Status</FormLabel>
                     <RadioGroup
@@ -253,7 +234,6 @@ const TaskForm = ({ open, handleClose, task, onSave, users }) => {
                 {/* Feedback field - only for leaders when reviewing */}
                 {isEditMode &&
                   isLeader &&
-                  task?.status === "submitted_for_review" &&
                   values.status === "needs_revision" && (
                     <TextField
                       fullWidth
@@ -265,8 +245,6 @@ const TaskForm = ({ open, handleClose, task, onSave, users }) => {
                       onChange={handleChange}
                       value={values.feedback}
                       name="feedback"
-                      error={!!touched.feedback && !!errors.feedback}
-                      helperText={touched.feedback && errors.feedback}
                       sx={{ gridColumn: "span 2" }}
                     />
                   )}

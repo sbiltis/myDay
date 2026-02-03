@@ -159,25 +159,45 @@ const Tasks = () => {
       renderCell: ({ row }) => row.createdBy?.name || "Unknown",
     },
     {
-      field: "project",
-      headerName: "Project Phase",
+      field: "status",
+      headerName: "Status",
       flex: 1.2,
       renderCell: ({ row }) => {
-        const projectLabels = {
-          not_started: "Not Started",
-          in_progress: "In Progress",
-          submit_for_review: "Submit for Review",
-          icebox: "Icebox",
-        };
+        console.log("Row data:", {
+          project: row.project,
+          status: row.status,
+          projectUpdatedAt: row.projectUpdatedAt,
+          statusUpdatedAt: row.statusUpdatedAt,
+        });
+        // Show whichever was updated most recently
+        const showStatus =
+          row.statusUpdatedAt && row.projectUpdatedAt
+            ? row.statusUpdatedAt > row.projectUpdatedAt
+            : !!row.status;
 
-        const projectColors = {
+        const value = showStatus ? row.status : row.project;
+
+        console.log('Showing:', showStatus ? 'status' : 'project', 'Value:', value);
+
+        const allColors = {
+          // Status colors
+          approved: colors.greenAccent[600],
+          needs_revision: colors.redAccent[600],
+          icebox: colors.grey[700],
+          // Project colors
           not_started: colors.grey[700],
           in_progress: colors.blueAccent[700],
           submit_for_review: colors.primary[500],
-          icebox: colors.redAccent[700],
         };
 
-        if (!row.project) return "None";
+        const allLabels = {
+          not_started: "Not Started",
+          in_progress: "In Progress",
+          submit_for_review: "Submit for Review",
+          approved: "Approved",
+          needs_revision: "Needs Revision",
+          icebox: "Icebox",
+        };
 
         return (
           <Box
@@ -186,10 +206,10 @@ const Tasks = () => {
             p="5px"
             display="flex"
             justifyContent="center"
-            backgroundColor={projectColors[row.project] || colors.grey[700]}
+            backgroundColor={allColors[value] || colors.blueAccent[700]}
             borderRadius="4px"
           >
-            {projectLabels[row.project] || row.project}
+            {allLabels[value] || value || "None"}
           </Box>
         );
       },
