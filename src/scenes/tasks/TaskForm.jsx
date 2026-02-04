@@ -134,19 +134,22 @@ const TaskForm = ({ open, handleClose, task, onSave, users }) => {
                   name="assignedTo"
                   error={!!touched.assignedTo && !!errors.assignedTo}
                   helperText={touched.assignedTo && errors.assignedTo}
-                  disabled={isEditMode && !isLeader} // CHANGE THIS LINE - only leaders can reassign existing tasks
+                  disabled={false} // CHANGE THIS LINE - only leaders can reassign existing tasks
                 >
                   {users
                     .filter((u) => {
-                      // Members can only assign to other members when creating
-                      if (!isEditMode && currentUser?.role === "member") {
+                      // Members can only see other members
+
+                      console.log("Current user role:", currentUser?.role);
+                      console.log("Filtering user:", u.name, u.role);
+                      if (currentUser?.role === "member") {
                         return u.role === "member";
                       }
-                      // Project leads can assign to members and project leads
-                      if (!isEditMode && currentUser?.role === "project_lead") {
+                      // Project leads can see members and project leads
+                      if (currentUser?.role === "project_lead") {
                         return u.role === "member" || u.role === "project_lead";
                       }
-                      // Leaders can assign to anyone
+                      // Club leads can see everyone
                       return true;
                     })
                     .map((user) => (

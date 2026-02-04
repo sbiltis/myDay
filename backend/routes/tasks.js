@@ -91,6 +91,7 @@ router.post("/", auth, async (req, res) => {
       priority,
       dueDate,
       project,
+      projectUpdatedAt: project ? new Date() : undefined,
     });
 
     console.log("About to save task:", task);
@@ -148,15 +149,17 @@ router.put("/:id", auth, async (req, res) => {
     if (description !== undefined) task.description = description;
     if (priority) task.priority = priority;
     if (dueDate !== undefined) task.dueDate = dueDate;
-    if (project !== undefined) {
+    if (project !== undefined && project !== "" && project !== task.project) {
+      // ADD CHECK
       task.project = project;
-      task.projectUpdatedAt = new Date(); // ADD THIS
+      task.projectUpdatedAt = new Date();
     }
 
     // Handle status changes - ONLY LEADERS can change status
-    if (status && isLeader) {
+    if (status && isLeader && status !== task.status) {
+      // ADD CHECK
       task.status = status;
-      task.statusUpdatedAt = new Date(); // ADD THIS
+      task.statusUpdatedAt = new Date();
       if (status === "approved" || status === "needs_revision") {
         task.reviewedBy = req.userId;
         task.reviewedAt = new Date();
